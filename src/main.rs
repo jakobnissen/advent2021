@@ -20,4 +20,5 @@ fn day_lines(path: &str) -> impl Iterator<Item = String> {
 
 fn main() {
     println!("{:?}", days::day01::solve(day_lines("data/day01.txt")));
+    println!("{:?}", days::day02::solve(day_lines("data/day02.txt")));
 }
