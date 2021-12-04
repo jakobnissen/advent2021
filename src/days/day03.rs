@@ -39,7 +39,8 @@ fn most_common_bits(v: &[usize], bitwidth: usize) -> usize {
 
 fn parse(s: &str) -> (Vec<usize>, usize) {
     let mut bitwidth: Option<usize> = None;
-    let v: Vec<_> = s.lines()
+    let v: Vec<_> = s
+        .lines()
         .map(|line| {
             let str = line.trim();
             let nbits = str.len();

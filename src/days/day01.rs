@@ -1,5 +1,6 @@
 pub fn solve(s: &str) -> (usize, usize) {
-    let nums: Vec<_> = s.lines()
+    let nums: Vec<_> = s
+        .lines()
         .map(|s| {
             s.trim().parse::<usize>().unwrap_or_else(|_| {
                 println!("Cannot parse as usize: \"{}\"", s);

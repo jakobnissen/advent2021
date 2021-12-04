@@ -37,17 +37,18 @@ enum Direction {
 }
 
 fn parse(s: &str) -> Vec<(Direction, usize)> {
-    s.lines().map(|s| {
-        let (sdir, smag) = s.trim().split_once(' ').unwrap();
-        let dir = match sdir {
-            "forward" => Direction::Forward,
-            "down" => Direction::Down,
-            "up" => Direction::Up,
-            _ => unreachable!(),
-        };
-        (dir, smag.parse::<usize>().unwrap())
-    })
-    .collect::<Vec<_>>()
+    s.lines()
+        .map(|s| {
+            let (sdir, smag) = s.trim().split_once(' ').unwrap();
+            let dir = match sdir {
+                "forward" => Direction::Forward,
+                "down" => Direction::Down,
+                "up" => Direction::Up,
+                _ => unreachable!(),
+            };
+            (dir, smag.parse::<usize>().unwrap())
+        })
+        .collect::<Vec<_>>()
 }
 
 #[cfg(test)]

@@ -1,10 +1,7 @@
 pub fn solve(s: &str) -> (usize, usize) {
     let (nums, mut boards) = parse(s);
     let scores = get_scores(&nums, &mut boards);
-    return (
-        *scores.first().unwrap(),
-        *scores.last().unwrap(),
-    );
+    return (*scores.first().unwrap(), *scores.last().unwrap());
 }
 
 fn get_scores(nums: &[usize], boards: &mut Vec<Board>) -> Vec<usize> {
@@ -72,7 +69,9 @@ fn parse(s: &str) -> (Vec<usize>, Vec<Board>) {
                     .collect();
                 v.extend(vi);
             }
-            if v.len() != 25 {panic!()};
+            if v.len() != 25 {
+                panic!()
+            };
             Board(v.iter().map(|&n| (n, false)).collect::<Vec<_>>())
         })
         .collect();
