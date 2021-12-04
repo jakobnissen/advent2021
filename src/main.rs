@@ -1,10 +1,13 @@
 mod days;
 
 use std::fmt::Display;
-use std::fs::read_to_string;
+use std::fs::{read_to_string, metadata};
+use std::path::{Path, PathBuf};
 use std::time::Instant;
 
 use gumdrop::Options;
+use anyhow::{anyhow, Result};
+use reqwest::blocking::Client;
 
 fn print_day(day: usize) {
     let now = Instant::now();
@@ -49,18 +52,10 @@ where
     Some((Box::new(a), Box::new(b)))
 }
 
-fn getdays(days: &[usize], subcommand: &str) -> Vec<usize> {
+fn getdays(days: &[usize]) -> Vec<usize> {
     let mut days = days.to_vec();
     days.sort_unstable();
     days.dedup();
-    if days.is_empty() {
-        println!(
-            "Usage: {} {} day [day ...]",
-            subcommand,
-            std::env::args().next().unwrap()
-        );
-        std::process::exit(1);
-    }
     let lastday = *days.last().unwrap();
     if *days.first().unwrap() < 1 || lastday > 25 {
         println!("Can only process days from 1 to 25 inclusive");
@@ -69,21 +64,84 @@ fn getdays(days: &[usize], subcommand: &str) -> Vec<usize> {
     days
 }
 
-#[derive(Options, Debug)]
+fn download_inputs_if_missing(path: &Path, days: &[usize]) -> Result<()> {
+    let mut client: Option<Client> = None;
+    if !path.exists() {
+        std::fs::create_dir(path)?
+    } else {
+        let md = metadata(path)?;
+        if !md.is_dir() {
+            return Err(anyhow!("Path exists and is not a directory: {}", path.display()))
+        }
+    }
+    for &day in days {
+        let daypath = path.join(format!("day{:0>2}.txt", day));
+        if !daypath.exists() {
+            println!("Downloading day {:0>2}...", day);
+            if client.is_none() {
+                client = Some(make_client()?)
+            }
+            let input = download_input(client.as_ref().unwrap(), day)?;
+            std::fs::write(daypath, input)?;
+        } else {
+            println!("Input already exists: Day {:0>2}...", day);
+        }
+    }
+    Ok(())
+}
+
+fn download_input(client: &Client, day: usize) -> Result<String> {
+    let url = format!("https://adventofcode.com/2021/ay/{}/input", day);
+    let resp = client.get(url.as_str()).send()?;
+    if !resp.status().is_success() {
+        return Err(anyhow!("Server request was not successful: {}", resp.text()?))
+    }
+    Ok(resp.text()?)
+}
+
+fn make_client() -> Result<Client> {
+    let mut headers = reqwest::header::HeaderMap::default();
+    let session = match std::env::var("ADVENTOFCODE_SESSION") {
+        Ok(s) => s,
+        Err(e) => {
+            println!("Error: Could not load environmental variable ADVENTOFCODE_SESSION: \"{}\"", e);
+            std::process::exit(1);
+        }
+    };
+    let cookie = reqwest::header::HeaderValue::from_str(
+        format!("session={}", session).as_str(),
+    )
+    .unwrap();
+    headers.insert("Cookie", cookie);
+    Ok(Client::builder()
+        .default_headers(headers)
+        .build()?)
+}
+
+#[derive(Options)]
 struct MyOptions {
-    #[options(help = "print help message")]
+    #[options(help="print help message")]
     help: bool,
     #[options(command)]
     command: Option<Command>,
 }
 
-#[derive(Options, Debug)]
+#[derive(Options)]
 enum Command {
     Solve(SolveOptions),
+    Download(DownloadOptions),
+}
+
+#[derive(Options)]
+struct SolveOptions {
+    #[options(free)]
+    days: Vec<usize>,
 }
 
 #[derive(Options, Debug)]
-struct SolveOptions {
+struct DownloadOptions {
+    #[options(free)]
+    path: PathBuf,
     #[options(free)]
     days: Vec<usize>,
 }
@@ -96,12 +154,36 @@ fn main() {
             std::process::exit(1);
         }
         Some(Command::Solve(SolveOptions { days })) => {
-            let days = getdays(&days, "solve");
+            if days.is_empty() {
+                println!(
+                    "Usage: {} solve day [day ...]",
+                    std::env::args().next().unwrap()
+                );
+                std::process::exit(1);
+            }
+            let days = getdays(&days);
             let &lastday = days.last().unwrap();
             for day in days {
                 print_day(day);
                 if day != lastday {println!();}
             }
+        },
+        Some(Command::Download(DownloadOptions { path, days })) => {
+            if days.is_empty() {
+                println!(
+                    "Usage: {} download path day [day ...]",
+                    std::env::args().next().unwrap()
+                );
+                std::process::exit(1);
+            }
+            let days = getdays(&days);
+            match download_inputs_if_missing(&path, &days) {
+                Ok(_) => (),
+                Err(e) => {
+                    println!("Error when downloading input: {}", e);
+                    std::process::exit(1);
+                }
+            };
         }
     }
 }
