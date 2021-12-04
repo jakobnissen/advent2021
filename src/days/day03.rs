@@ -1,9 +1,5 @@
-pub fn solve<I>(lines: I) -> (usize, usize)
-where
-    I: IntoIterator,
-    I::Item: AsRef<str>,
-{
-    let (nums, bitwidth) = parse(lines);
+pub fn solve(s: &str) -> (usize, usize) {
+    let (nums, bitwidth) = parse(s);
     let gamma = most_common_bits(&nums, bitwidth);
     let part1 = gamma * (!gamma & ((1 << bitwidth) - 1));
     let part2 =
@@ -41,16 +37,11 @@ fn most_common_bits(v: &[usize], bitwidth: usize) -> usize {
         .fold(0, |n, count| (n << 1) | (2 * count > v.len()) as usize)
 }
 
-pub fn parse<I>(lines: I) -> (Vec<usize>, usize)
-where
-    I: IntoIterator,
-    I::Item: AsRef<str>,
-{
+fn parse(s: &str) -> (Vec<usize>, usize) {
     let mut bitwidth: Option<usize> = None;
-    let v: Vec<_> = lines
-        .into_iter()
+    let v: Vec<_> = s.lines()
         .map(|line| {
-            let str = line.as_ref().trim();
+            let str = line.trim();
             let nbits = str.len();
             if nbits > (usize::BITS as usize) {
                 panic!()
@@ -86,6 +77,6 @@ mod tests {
 
     #[test]
     fn test() {
-        assert_eq!(super::solve(crate::test_lines(TEST_STR)), (198, 230));
+        assert_eq!(super::solve(TEST_STR), (198, 230));
     }
 }

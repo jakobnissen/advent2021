@@ -1,21 +1,21 @@
 pub fn solve(s: &str) -> (usize, usize) {
     let (nums, mut boards) = parse(s);
-    let index_scores = get_scores(&nums, &mut boards);
+    let scores = get_scores(&nums, &mut boards);
     return (
-        index_scores.first().unwrap().1,
-        index_scores.last().unwrap().1,
+        *scores.first().unwrap(),
+        *scores.last().unwrap(),
     );
 }
 
-fn get_scores(nums: &[usize], boards: &mut Vec<Board>) -> Vec<(usize, usize)> {
-    let mut result: Vec<(usize, usize)> = Vec::new();
+fn get_scores(nums: &[usize], boards: &mut Vec<Board>) -> Vec<usize> {
+    let mut result: Vec<usize> = Vec::new();
     for &num in nums {
         // This is equivalent to drain_filter, which is currently an unstable feature
         let mut i: usize = 0;
         while i < boards.len() {
             boards[i].add_number(num);
             if boards[i].check_board() {
-                result.push((i, boards[i].score(num)));
+                result.push(boards[i].score(num));
                 boards.remove(i);
             } else {
                 i += 1;
@@ -28,27 +28,24 @@ fn get_scores(nums: &[usize], boards: &mut Vec<Board>) -> Vec<(usize, usize)> {
     unreachable!()
 }
 
-struct Board {
-    v: Vec<(usize, bool)>,
-}
+struct Board(Vec<(usize, bool)>);
 
 impl Board {
     fn add_number(&mut self, num: usize) {
-        for i in 0..(self.v.len()) {
-            if self.v[i].0 == num {
-                self.v[i] = (num, true)
-            }
+        for i in 0..25 {
+            let (n, b) = self.0[i];
+            self.0[i] = (n, b | (num == n));
         }
     }
 
     fn check_board(&self) -> bool {
         (0..5).into_iter().any(|i| {
-            ((5 * i)..(5 * i + 5)).all(|j| self.v[j].1) || (i..25).step_by(5).all(|j| self.v[j].1)
+            ((5 * i)..(5 * i + 5)).all(|j| self.0[j].1) || (i..25).step_by(5).all(|j| self.0[j].1)
         })
     }
 
     fn score(&self, n: usize) -> usize {
-        self.v
+        self.0
             .iter()
             .filter(|(_, b)| !b)
             .map(|(v, _)| v)
@@ -61,7 +58,6 @@ fn parse(s: &str) -> (Vec<usize>, Vec<Board>) {
     let stripped = s.lines().map(str::trim).collect::<Vec<_>>().join("\n");
     let blocks = stripped.split("\n\n").collect::<Vec<_>>();
     let nums = blocks[0]
-        .trim()
         .split(',')
         .map(|s| s.parse::<usize>().unwrap())
         .collect::<Vec<_>>();
@@ -76,9 +72,8 @@ fn parse(s: &str) -> (Vec<usize>, Vec<Board>) {
                     .collect();
                 v.extend(vi);
             }
-            Board {
-                v: v.iter().map(|&n| (n, false)).collect::<Vec<_>>(),
-            }
+            if v.len() != 25 {panic!()};
+            Board(v.iter().map(|&n| (n, false)).collect::<Vec<_>>())
         })
         .collect();
     (nums, boards)

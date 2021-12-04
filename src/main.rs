@@ -1,64 +1,39 @@
 mod days;
 
-use std::fs::{read_to_string, File};
-use std::io::{BufRead, BufReader};
+use std::fs::read_to_string;
 use std::fmt::Display;
 use std::time::Instant;
 
 use gumdrop::Options;
 
-fn day_lines(path: &str) -> impl Iterator<Item = String> {
-    let buf = path.to_owned();
-    let file = File::open(&path).unwrap_or_else(|e| {
-        println!("Error when opening file: {:?}: {}", &buf, e);
-        std::process::exit(1);
-    });
-    BufReader::new(file)
-        .lines()
-        .enumerate()
-        .map(move |(lineno, result)| {
-            let string = result.unwrap_or_else(|e| {
-                println!(
-                    "Error when reading line {} of file at {:?}: {}",
-                    lineno, &buf, e
-                );
-                std::process::exit(1);
-            });
-            (lineno, string)
-        })
-        .map(|(_, s)| s)
-        .filter(|s| !s.is_empty())
-}
-
-#[cfg(test)]
-fn test_lines(s: &'static str) -> impl Iterator<Item = String> {
-    s.lines()
-        .map(|s| s.trim())
-        .filter(|s| !s.is_empty())
-        .map(|s| s.to_owned())
-}
-
 fn print_day(day: usize) {
     let now = Instant::now();
     let result: (Box<dyn Display>, Box<dyn Display>) = match day {
-        1 => printbox(days::day01::solve(day_lines("data/day01.txt"))),
-        2 => printbox(days::day02::solve(day_lines("data/day02.txt"))),
-        3 => printbox(days::day03::solve(day_lines("data/day03.txt"))),
-        4 => printbox(days::day04::solve(&read_to_string("data/day04.txt").unwrap())),
+        1 => printbox(days::day01::solve, "data/day01.txt"),
+        2 => printbox(days::day02::solve, "data/day02.txt"),
+        3 => printbox(days::day03::solve, "data/day03.txt"),
+        4 => printbox(days::day04::solve, "data/day04.txt"),
         _ => unreachable!(),
     };
     let elapsed = now.elapsed();
-    println!("Day {:0>2} [{:08.2?}]\n    Part 1: {}\n    Part 2: {}\n", day, elapsed, result.0, result.1);
+    println!("Day {:0>2} [{:.2?}]\n    Part 1: {}\n    Part 2: {}\n", day, elapsed, result.0, result.1);
 }
 
-fn printbox<A: 'static, B: 'static>(s: (A, B)) -> (Box<dyn Display>, Box< dyn Display>)
-where
-    A: Display,
-    B: Display
+fn printbox<F, A: 'static, B: 'static>(f: F, s: &str) -> (Box<dyn Display>, Box< dyn Display>)
+where F: Fn(&str) -> (A, B),
+A: Display,
+B: Display
 {
-    (Box::new(s.0), Box::new(s.1))
-}
-
+    let data = match read_to_string(s) {
+        Err(e) => {
+            println!("Error when reading file {} to string: \"{}\"", s, e);
+            std::process::exit(1);
+        },
+        Ok(s) => s
+    };
+    let (a, b) = f(&data);
+    (Box::new(a), Box::new(b))
+} 
 
 #[derive(Options, Debug)]
 struct MyOptions {

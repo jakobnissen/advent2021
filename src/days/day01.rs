@@ -1,13 +1,8 @@
-pub fn solve<I>(lines: I) -> (usize, usize)
-where
-    I: IntoIterator,
-    I::Item: AsRef<str>,
-{
-    let nums: Vec<_> = lines
-        .into_iter()
+pub fn solve(s: &str) -> (usize, usize) {
+    let nums: Vec<_> = s.lines()
         .map(|s| {
-            s.as_ref().parse::<usize>().unwrap_or_else(|_| {
-                println!("Cannot parse as usize: \"{}\"", s.as_ref());
+            s.trim().parse::<usize>().unwrap_or_else(|_| {
+                println!("Cannot parse as usize: \"{}\"", s);
                 std::process::exit(1);
             })
         })
@@ -41,6 +36,6 @@ mod tests {
 
     #[test]
     fn test() {
-        assert_eq!(super::solve(crate::test_lines(TEST_STR)), (7, 5));
+        assert_eq!(super::solve(TEST_STR), (7, 5));
     }
 }

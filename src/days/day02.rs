@@ -1,9 +1,5 @@
-pub fn solve<I>(lines: I) -> (usize, usize)
-where
-    I: IntoIterator,
-    I::Item: AsRef<str>,
-{
-    let v = parse(lines);
+pub fn solve(s: &str) -> (usize, usize) {
+    let v = parse(s);
     (part1(&v), part2(&v))
 }
 
@@ -40,24 +36,18 @@ enum Direction {
     Up,
 }
 
-fn parse<I>(lines: I) -> Vec<(Direction, usize)>
-where
-    I: IntoIterator,
-    I::Item: AsRef<str>,
-{
-    lines
-        .into_iter()
-        .map(|s| {
-            let (sdir, smag) = s.as_ref().split_once(' ').unwrap();
-            let dir = match sdir {
-                "forward" => Direction::Forward,
-                "down" => Direction::Down,
-                "up" => Direction::Up,
-                _ => unreachable!(),
-            };
-            (dir, smag.parse::<usize>().unwrap())
-        })
-        .collect::<Vec<_>>()
+fn parse(s: &str) -> Vec<(Direction, usize)> {
+    s.lines().map(|s| {
+        let (sdir, smag) = s.trim().split_once(' ').unwrap();
+        let dir = match sdir {
+            "forward" => Direction::Forward,
+            "down" => Direction::Down,
+            "up" => Direction::Up,
+            _ => unreachable!(),
+        };
+        (dir, smag.parse::<usize>().unwrap())
+    })
+    .collect::<Vec<_>>()
 }
 
 #[cfg(test)]
@@ -71,6 +61,6 @@ mod tests {
 
     #[test]
     fn test() {
-        assert_eq!(super::solve(crate::test_lines(TEST_STR)), (150, 900));
+        assert_eq!(super::solve(TEST_STR), (150, 900));
     }
 }
