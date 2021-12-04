@@ -3,6 +3,7 @@ mod days;
 use std::fs::{read_to_string, File};
 use std::io::{BufRead, BufReader};
 use std::fmt::Display;
+use std::time::Instant;
 
 use gumdrop::Options;
 
@@ -38,6 +39,7 @@ fn test_lines(s: &'static str) -> impl Iterator<Item = String> {
 }
 
 fn print_day(day: usize) {
+    let now = Instant::now();
     let result: (Box<dyn Display>, Box<dyn Display>) = match day {
         1 => printbox(days::day01::solve(day_lines("data/day01.txt"))),
         2 => printbox(days::day02::solve(day_lines("data/day02.txt"))),
@@ -45,7 +47,8 @@ fn print_day(day: usize) {
         4 => printbox(days::day04::solve(&read_to_string("data/day04.txt").unwrap())),
         _ => unreachable!(),
     };
-    println!("Day {:0>2}\n\tPart 1: {}\n\tPart 2: {}", day, result.0, result.1);
+    let elapsed = now.elapsed();
+    println!("Day {:0>2} [{:08.2?}]\n    Part 1: {}\n    Part 2: {}\n", day, elapsed, result.0, result.1);
 }
 
 fn printbox<A: 'static, B: 'static>(s: (A, B)) -> (Box<dyn Display>, Box< dyn Display>)
@@ -61,8 +64,6 @@ where
 struct MyOptions {
     #[options(help = "print help message")]
     help: bool,
-    #[options(help = "be verbose")]
-    verbose: bool,
     #[options(command)]
     command: Option<Command>,
 }
@@ -90,7 +91,7 @@ fn main() {
             days.sort_unstable();
             days.dedup();
             if days.is_empty() {
-                println!("Pass at least one day to solve");
+                println!("Usage: {} solve day [day ...]", std::env::args().next().unwrap());
                 std::process::exit(1);
             }
             if *days.first().unwrap() < 1 || *days.last().unwrap() > 25 {
