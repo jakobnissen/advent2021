@@ -58,7 +58,8 @@ impl Board {
 }
 
 fn parse(s: &str) -> (Vec<usize>, Vec<Board>) {
-    let blocks = s.split("\n\n").collect::<Vec<_>>();
+    let stripped = s.lines().map(str::trim).collect::<Vec<_>>().join("\n");
+    let blocks = stripped.split("\n\n").collect::<Vec<_>>();
     let nums = blocks[0]
         .trim()
         .split(',')
