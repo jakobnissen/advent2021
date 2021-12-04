@@ -19,10 +19,10 @@ fn print_day(day: usize) {
     let elapsed = now.elapsed();
     print!("Day {:0>2}", day);
     match result {
-        None => println!(": Unimplemented!\n"),
+        None => println!(": Unimplemented!"),
         Some(result) => {
             println!(
-                " [{:.2?}]\n    Part 1: {}\n    Part 2: {}\n",
+                " [{:.2?}]\n    Part 1: {}\n    Part 2: {}",
                 elapsed, result.0, result.1
             );
         }
@@ -47,6 +47,26 @@ where
     };
     let (a, b) = f(&data);
     Some((Box::new(a), Box::new(b)))
+}
+
+fn getdays(days: &[usize], subcommand: &str) -> Vec<usize> {
+    let mut days = days.to_vec();
+    days.sort_unstable();
+    days.dedup();
+    if days.is_empty() {
+        println!(
+            "Usage: {} {} day [day ...]",
+            subcommand,
+            std::env::args().next().unwrap()
+        );
+        std::process::exit(1);
+    }
+    let lastday = *days.last().unwrap();
+    if *days.first().unwrap() < 1 || lastday > 25 {
+        println!("Can only process days from 1 to 25 inclusive");
+        std::process::exit(1);
+    }
+    days
 }
 
 #[derive(Options, Debug)]
@@ -76,22 +96,11 @@ fn main() {
             std::process::exit(1);
         }
         Some(Command::Solve(SolveOptions { days })) => {
-            let mut days = days.iter().copied().collect::<Vec<_>>();
-            days.sort_unstable();
-            days.dedup();
-            if days.is_empty() {
-                println!(
-                    "Usage: {} solve day [day ...]",
-                    std::env::args().next().unwrap()
-                );
-                std::process::exit(1);
-            }
-            if *days.first().unwrap() < 1 || *days.last().unwrap() > 25 {
-                println!("Can only solve days from 1 to 25 inclusive");
-                std::process::exit(1);
-            }
+            let days = getdays(&days, "solve");
+            let &lastday = days.last().unwrap();
             for day in days {
-                print_day(day)
+                print_day(day);
+                if day != lastday {println!();}
             }
         }
     }
