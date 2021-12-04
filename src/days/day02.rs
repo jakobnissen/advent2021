@@ -60,6 +60,7 @@ where
         .collect::<Vec<_>>()
 }
 
+#[cfg(test)]
 mod tests {
     static TEST_STR: &str = "forward 5
     down 5

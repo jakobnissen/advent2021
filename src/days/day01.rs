@@ -26,6 +26,7 @@ where
     (part1, part2)
 }
 
+#[cfg(test)]
 mod tests {
     static TEST_STR: &str = "199
     200
