@@ -3,14 +3,13 @@ pub fn solve(s: &str) -> (usize, usize) {
         .lines()
         .map(str::trim)
         .filter(|s| !s.is_empty())
-        .map(|line| FaultLine::parse_from_line(line))
+        .map(FaultLine::parse_from_line)
         .collect();
     let mut map = {
         let (xmin, xmax, ymin, ymax) = faultlines.iter().fold(
-            (usize::MAX, 0usize, usize::MAX, 0usize),
-            |(xmin, xmax, ymin, ymax), faultline| {
-                let (xi, xa, yi, ya) = faultline.bounding_box();
-                (xmin.min(xi), xmax.max(xa), ymin.min(yi), ymax.max(ya))
+            (isize::MAX, 0isize, isize::MAX, 0isize),
+            |(xmin, xmax, ymin, ymax), i| {
+                (xmin.min(i.0).min(i.1), xmax.max(i.0).max(i.1), ymin.min(i.2).min(i.3), ymax.max(i.2).max(i.3))
             },
         );
         let (rowsize, colsize) = ((xmax - xmin + 1), (ymax - ymin + 1));
@@ -19,7 +18,7 @@ pub fn solve(s: &str) -> (usize, usize) {
             xmin,
             ymin,
             rowsize,
-            counts: vec![0; rowsize * colsize],
+            counts: vec![0; (rowsize * colsize) as usize],
         }
     };
     for faultline in faultlines.iter().filter(|x| x.is_level()) {
@@ -35,72 +34,37 @@ pub fn solve(s: &str) -> (usize, usize) {
 
 struct Map {
     noverlaps: usize,
-    xmin: usize,
-    ymin: usize,
-    rowsize: usize,
+    xmin: isize,
+    ymin: isize,
+    rowsize: isize,
     counts: Vec<u8>,
 }
 
-struct FaultLine {
-    xmin: usize,
-    y1: usize,
-    delta: (u8, i8), // (0 | 1, -1 | 0 | 1)
-    len: usize,
-}
+#[derive(Debug)]
+struct FaultLine(isize, isize, isize, isize);
 
 impl FaultLine {
     fn parse_from_line(s: &str) -> Self {
-        fn splitnumbers(s: &str) -> (usize, usize) {
+        fn splitnumbers(s: &str) -> (isize, isize) {
             let (a, b) = s.split_once(',').unwrap();
             (a.parse().unwrap(), b.parse().unwrap())
         }
         let (left, right) = s.split_once(" -> ").unwrap();
         let ((x1, y1), (x2, y2)) = (splitnumbers(left), splitnumbers(right));
-        let (xmin, xmax, y1, y2) = if x1 < x2 {
-            (x1, x2, y1, y2)
-        } else {
-            (x2, x1, y2, y1)
-        };
-        let dx = (xmax > xmin) as u8;
-        let dy = (y2 as isize - y1 as isize).signum() as i8;
-        let len = {
-            let xlen = (xmax - xmin) + 1;
-            let ylen = (y1.max(y2) - y1.min(y2)) + 1;
-            if (xlen == 1 && ylen == 1) || (xlen > 1 && ylen > 1 && xlen != ylen) {
-                panic!()
-            }
-            xlen.max(ylen)
-        };
-        FaultLine {
-            xmin,
-            y1,
-            delta: (dx, dy),
-            len,
-        }
+        FaultLine(x1, x2, y1, y2)
     }
 
     fn is_level(&self) -> bool {
-        self.delta.0 == 0 || self.delta.1 == 0
-    }
-
-    fn bounding_box(&self) -> (usize, usize, usize, usize) {
-        let y2 =
-            ((self.y1 as isize) + (self.delta.1 as isize) * ((self.len - 1) as isize)) as usize;
-        (
-            self.xmin,
-            self.xmin + (self.delta.0 as usize) * (self.len - 1),
-            self.y1.min(y2),
-            self.y1.max(y2),
-        )
+        self.0 == self.1 || self.2 == self.3
     }
 
     fn add_to_map(&self, map: &mut Map) {
-        let baseindex = (self.y1 - map.ymin) * map.rowsize + (self.xmin - map.xmin);
-        let delta = self.delta.0 as isize + (self.delta.1 as isize) * (map.rowsize as isize);
-        for i in 0..self.len {
-            let index = (baseindex as isize + (delta * i as isize)) as usize;
-            let v = map.counts[index];
-            map.counts[index] = if v == 0 {
+        let mut index = (self.0 - map.xmin) + map.rowsize * (self.2 - map.ymin);
+        let lastindex = (self.1 - map.xmin) + map.rowsize * (self.3 - map.ymin);
+        let delta = (self.1 - self.0).signum() + (self.3 - self.2).signum() * map.rowsize;
+        loop {
+            let v = map.counts[index as usize];
+            map.counts[index as usize] = if v == 0 {
                 1
             } else if v == 1 {
                 map.noverlaps += 1;
@@ -108,6 +72,8 @@ impl FaultLine {
             } else {
                 2
             };
+            if index == lastindex {break}
+            index += delta;
         }
     }
 }
