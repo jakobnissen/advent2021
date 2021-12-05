@@ -6,19 +6,13 @@ pub fn solve(s: &str) -> (usize, usize) {
         .map(FaultLine::parse_from_line)
         .collect();
     let mut map = {
-        let (xmin, xmax, ymin, ymax) = faultlines.iter().fold(
-            (isize::MAX, 0isize, isize::MAX, 0isize),
-            |(xmin, xmax, ymin, ymax), i| {
-                (xmin.min(i.0).min(i.1), xmax.max(i.0).max(i.1), ymin.min(i.2).min(i.3), ymax.max(i.2).max(i.3))
-            },
-        );
-        let (rowsize, colsize) = ((xmax - xmin + 1), (ymax - ymin + 1));
+        let mapsize = faultlines.iter().fold(0isize, |max, i| {
+            max.max(i.0).max(i.1).max(i.2).max(i.3)
+        }) + 1;
         Map {
             noverlaps: 0,
-            xmin,
-            ymin,
-            rowsize,
-            counts: vec![0; (rowsize * colsize) as usize],
+            mapsize,
+            counts: vec![0; (mapsize * mapsize) as usize],
         }
     };
     for faultline in faultlines.iter().filter(|x| x.is_level()) {
@@ -34,9 +28,7 @@ pub fn solve(s: &str) -> (usize, usize) {
 
 struct Map {
     noverlaps: usize,
-    xmin: isize,
-    ymin: isize,
-    rowsize: isize,
+    mapsize: isize,
     counts: Vec<u8>,
 }
 
@@ -59,19 +51,13 @@ impl FaultLine {
     }
 
     fn add_to_map(&self, map: &mut Map) {
-        let mut index = (self.0 - map.xmin) + map.rowsize * (self.2 - map.ymin);
-        let lastindex = (self.1 - map.xmin) + map.rowsize * (self.3 - map.ymin);
-        let delta = (self.1 - self.0).signum() + (self.3 - self.2).signum() * map.rowsize;
+        let mut index = self.0 + map.mapsize * self.2;
+        let lastindex = self.1 + map.mapsize * self.3;
+        let delta = (self.1 - self.0).signum() + (self.3 - self.2).signum() * map.mapsize;
         loop {
             let v = map.counts[index as usize];
-            map.counts[index as usize] = if v == 0 {
-                1
-            } else if v == 1 {
-                map.noverlaps += 1;
-                2
-            } else {
-                2
-            };
+            map.noverlaps += (v == 1) as usize;
+            map.counts[index as usize] = v.saturating_add(1);
             if index == lastindex {break}
             index += delta;
         }
