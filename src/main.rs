@@ -16,7 +16,8 @@ fn print_day(day: usize) {
         2 => printbox(days::day02::solve, "data/day02.txt"),
         3 => printbox(days::day03::solve, "data/day03.txt"),
         4 => printbox(days::day04::solve, "data/day04.txt"),
-        5..=25 => None,
+        5 => printbox(days::day05::solve, "data/day05.txt"),
+        6..=25 => None,
         _ => unreachable!(),
     };
     let elapsed = now.elapsed();
@@ -91,7 +92,7 @@ fn download_inputs_if_missing(path: &Path, days: &[usize]) -> Result<()> {
 }
 
 fn download_input(client: &Client, day: usize) -> Result<String> {
-    let url = format!("https://adventofcode.com/2021/ay/{}/input", day);
+    let url = format!("https://adventofcode.com/2021/day/{}/input", day);
     let resp = client.get(url.as_str()).send()?;
     if !resp.status().is_success() {
         return Err(anyhow!("Server request was not successful: {}", resp.text()?))
