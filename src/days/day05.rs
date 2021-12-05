@@ -1,13 +1,26 @@
 pub fn solve(s: &str) -> (usize, usize) {
-    let faultlines = parse(s);
+    let faultlines: Vec<_> = s
+        .lines()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(|line| FaultLine::parse_from_line(line))
+        .collect();
     let mut map = {
-        let (xmin, xmax, ymin, ymax) = faultlines.iter()
-            .fold((usize::MAX, 0usize, usize::MAX, 0usize), |(xmin, xmax, ymin, ymax), faultline| {
-            let (xi, xa, yi, ya) = faultline.bounding_box();
-            (xmin.min(xi), xmax.max(xa), ymin.min(yi), ymax.max(ya))
-        });
+        let (xmin, xmax, ymin, ymax) = faultlines.iter().fold(
+            (usize::MAX, 0usize, usize::MAX, 0usize),
+            |(xmin, xmax, ymin, ymax), faultline| {
+                let (xi, xa, yi, ya) = faultline.bounding_box();
+                (xmin.min(xi), xmax.max(xa), ymin.min(yi), ymax.max(ya))
+            },
+        );
         let (rowsize, colsize) = ((xmax - xmin + 1), (ymax - ymin + 1));
-        Map{noverlaps: 0, xmin, ymin, rowsize, counts: vec![0; rowsize * colsize]}
+        Map {
+            noverlaps: 0,
+            xmin,
+            ymin,
+            rowsize,
+            counts: vec![0; rowsize * colsize],
+        }
     };
     for faultline in faultlines.iter().filter(|x| x.is_level()) {
         faultline.add_to_map(&mut map)
@@ -20,25 +33,19 @@ pub fn solve(s: &str) -> (usize, usize) {
     (part1, part2)
 }
 
-fn parse(s: &str) -> Vec<FaultLine> {
-    s.lines().map(str::trim).filter(|s| !s.is_empty()).map(|line| {
-        FaultLine::parse_from_line(line)
-    }).collect()
-}
-
 struct Map {
     noverlaps: usize,
     xmin: usize,
     ymin: usize,
     rowsize: usize,
-    counts: Vec<u8>
+    counts: Vec<u8>,
 }
 
 struct FaultLine {
     xmin: usize,
     y1: usize,
     delta: (u8, i8), // (0 | 1, -1 | 0 | 1)
-    len: usize
+    len: usize,
 }
 
 impl FaultLine {
@@ -49,7 +56,11 @@ impl FaultLine {
         }
         let (left, right) = s.split_once(" -> ").unwrap();
         let ((x1, y1), (x2, y2)) = (splitnumbers(left), splitnumbers(right));
-        let (xmin, xmax, y1, y2) = if x1 < x2 {(x1, x2, y1, y2)} else {(x2, x1, y2, y1)};
+        let (xmin, xmax, y1, y2) = if x1 < x2 {
+            (x1, x2, y1, y2)
+        } else {
+            (x2, x1, y2, y1)
+        };
         let dx = (xmax > xmin) as u8;
         let dy = (y2 as isize - y1 as isize).signum() as i8;
         let len = {
@@ -60,7 +71,12 @@ impl FaultLine {
             }
             xlen.max(ylen)
         };
-        FaultLine{xmin, y1, delta: (dx, dy), len}
+        FaultLine {
+            xmin,
+            y1,
+            delta: (dx, dy),
+            len,
+        }
     }
 
     fn is_level(&self) -> bool {
@@ -68,7 +84,8 @@ impl FaultLine {
     }
 
     fn bounding_box(&self) -> (usize, usize, usize, usize) {
-        let y2 = ((self.y1 as isize) + (self.delta.1 as isize) * ((self.len - 1) as isize)) as usize;
+        let y2 =
+            ((self.y1 as isize) + (self.delta.1 as isize) * ((self.len - 1) as isize)) as usize;
         (
             self.xmin,
             self.xmin + (self.delta.0 as usize) * (self.len - 1),

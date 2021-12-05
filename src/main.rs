@@ -1,12 +1,12 @@
 mod days;
 
 use std::fmt::Display;
-use std::fs::{read_to_string, metadata};
+use std::fs::{metadata, read_to_string};
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 
-use gumdrop::Options;
 use anyhow::{anyhow, Result};
+use gumdrop::Options;
 use reqwest::blocking::Client;
 
 fn print_day(day: usize) {
@@ -72,7 +72,10 @@ fn download_inputs_if_missing(path: &Path, days: &[usize]) -> Result<()> {
     } else {
         let md = metadata(path)?;
         if !md.is_dir() {
-            return Err(anyhow!("Path exists and is not a directory: {}", path.display()))
+            return Err(anyhow!(
+                "Path exists and is not a directory: {}",
+                path.display()
+            ));
         }
     }
     for &day in days {
@@ -95,7 +98,10 @@ fn download_input(client: &Client, day: usize) -> Result<String> {
     let url = format!("https://adventofcode.com/2021/day/{}/input", day);
     let resp = client.get(url.as_str()).send()?;
     if !resp.status().is_success() {
-        return Err(anyhow!("Server request was not successful: {}", resp.text()?))
+        return Err(anyhow!(
+            "Server request was not successful: {}",
+            resp.text()?
+        ));
     }
     Ok(resp.text()?)
 }
@@ -105,23 +111,22 @@ fn make_client() -> Result<Client> {
     let session = match std::env::var("ADVENTOFCODE_SESSION") {
         Ok(s) => s,
         Err(e) => {
-            println!("Error: Could not load environmental variable ADVENTOFCODE_SESSION: \"{}\"", e);
+            println!(
+                "Error: Could not load environmental variable ADVENTOFCODE_SESSION: \"{}\"",
+                e
+            );
             std::process::exit(1);
         }
     };
-    let cookie = reqwest::header::HeaderValue::from_str(
-        format!("session={}", session).as_str(),
-    )
-    .unwrap();
+    let cookie =
+        reqwest::header::HeaderValue::from_str(format!("session={}", session).as_str()).unwrap();
     headers.insert("Cookie", cookie);
-    Ok(Client::builder()
-        .default_headers(headers)
-        .build()?)
+    Ok(Client::builder().default_headers(headers).build()?)
 }
 
 #[derive(Options)]
 struct MyOptions {
-    #[options(help="print help message")]
+    #[options(help = "print help message")]
     help: bool,
     #[options(command)]
     command: Option<Command>,
@@ -166,9 +171,11 @@ fn main() {
             let &lastday = days.last().unwrap();
             for day in days {
                 print_day(day);
-                if day != lastday {println!();}
+                if day != lastday {
+                    println!();
+                }
             }
-        },
+        }
         Some(Command::Download(DownloadOptions { path, days })) => {
             if days.is_empty() {
                 println!(
