@@ -6,9 +6,10 @@ pub fn solve(s: &str) -> (usize, usize) {
         .map(FaultLine::parse_from_line)
         .collect();
     let mut map = {
-        let mapsize = faultlines.iter().fold(0isize, |max, i| {
-            max.max(i.0).max(i.1).max(i.2).max(i.3)
-        }) + 1;
+        let mapsize = faultlines
+            .iter()
+            .fold(0isize, |max, i| max.max(i.0).max(i.1).max(i.2).max(i.3))
+            + 1;
         Map {
             noverlaps: 0,
             mapsize,
@@ -58,7 +59,9 @@ impl FaultLine {
             let v = map.counts[index as usize];
             map.noverlaps += (v == 1) as usize;
             map.counts[index as usize] = v.saturating_add(1);
-            if index == lastindex {break}
+            if index == lastindex {
+                break;
+            }
             index += delta;
         }
     }

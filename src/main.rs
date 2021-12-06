@@ -17,7 +17,8 @@ fn print_day(day: usize) {
         3 => printbox(days::day03::solve, "data/day03.txt"),
         4 => printbox(days::day04::solve, "data/day04.txt"),
         5 => printbox(days::day05::solve, "data/day05.txt"),
-        6..=25 => None,
+        6 => printbox(days::day06::solve, "data/day06.txt"),
+        7..=25 => None,
         _ => unreachable!(),
     };
     let elapsed = now.elapsed();
