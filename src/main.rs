@@ -91,7 +91,7 @@ fn download_inputs_if_missing(path: &Path, days: &[usize]) -> Result<()> {
             let input = download_input(client.as_ref().unwrap(), day)?;
             std::fs::write(daypath, input)?;
         } else {
-            println!("Input already exists: Day {:0>2}...", day);
+            println!("Input already exists: Day {:0>2}", day);
         }
     }
     Ok(())

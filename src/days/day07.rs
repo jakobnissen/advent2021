@@ -20,7 +20,10 @@ pub fn solve(s: &str) -> (usize, usize) {
             part1 + (i - median).abs(),
         )
     });
-    (part1.try_into().unwrap(), (y1.min(y2) / 2).try_into().unwrap())
+    (
+        part1.try_into().unwrap(),
+        (y1.min(y2) / 2).try_into().unwrap(),
+    )
 }
 
 #[cfg(test)]
