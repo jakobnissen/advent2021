@@ -1,5 +1,12 @@
 struct SquidGrid([[u8; 10]; 10]);
 
+fn cartesian<T, E>(a: T, b: T) -> impl Iterator<Item=(E, E)>
+where T: Iterator<Item=E> + Clone,
+E: Copy
+{
+    a.flat_map(move |x| b.clone().map(move |y| (x, y)))
+}
+
 impl SquidGrid {
     fn parse(s: &str) -> Self {
         let mut arr = [[0u8; 10]; 10];
@@ -13,20 +20,16 @@ impl SquidGrid {
 
     // Increase all squid's energy by 1
     fn increase_all(&mut self) {
-        for i in 0..10 {
-            for j in 0..10 {
-                self.0[i][j] += 1;
-            }
+        for (i, j) in cartesian(0..10, 0..10) {
+            self.0[i][j] += 1;
         }
     }
 
     // Set all squids that have flashed this iteration to 0.
     fn reset_flashed(&mut self) {
-        for i in 0..10 {
-            for j in 0..10 {
-                if self.0[i][j] > 9 {
-                    self.0[i][j] = 0;
-                }
+        for (i, j) in cartesian(0..10, 0..10) {
+            if self.0[i][j] > 9 {
+                self.0[i][j] = 0;
             }
         }
     }
@@ -35,14 +38,12 @@ impl SquidGrid {
     // to indicate it should not be flashing any more this iteration.
     fn flash(&mut self, row: isize, col: isize) {
         self.0[row as usize][col as usize] = 20;
-        for &drow in [-1, 0, 1].iter() {
-            for &dcol in [-1, 0, 1].iter() {
-                if !(drow == 0 && dcol == 0)
-                    && (0..10).contains(&(row + drow))
-                    && (0..10).contains(&(col + dcol))
-                {
-                    self.0[(row + drow) as usize][(col + dcol) as usize] += 1;
-                }
+        for (&drow, &dcol) in cartesian([-1, 0, 1].iter(), [-1, 0, 1].iter()) {
+            if !(drow == 0 && dcol == 0)
+                && (0..10).contains(&(row + drow))
+                && (0..10).contains(&(col + dcol))
+            {
+                self.0[(row + drow) as usize][(col + dcol) as usize] += 1;
             }
         }
     }
@@ -59,14 +60,12 @@ pub fn solve(s: &str) -> (usize, usize) {
 
         while !flashing_converged {
             flashing_converged = true;
-            for i in 0..10 {
-                for j in 0..10 {
-                    // Squids that have already flashed has energy at 20 or above, and should not flash
-                    if (10..20).contains(&grid.0[i as usize][j as usize]) {
-                        grid.flash(i, j);
-                        this_iteration_flashes += 1;
-                        flashing_converged = false;
-                    }
+            for (i, j) in cartesian(0..10, 0..10) {
+                // Squids that have already flashed has energy at 20 or above, and should not flash
+                if (10..20).contains(&grid.0[i as usize][j as usize]) {
+                    grid.flash(i, j);
+                    this_iteration_flashes += 1;
+                    flashing_converged = false;
                 }
             }
         }
