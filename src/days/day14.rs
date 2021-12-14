@@ -1,82 +1,56 @@
-use std::collections::HashMap;
-use std::hash::Hash;
+use ndarray::Array2;
 
 pub fn solve(s: &str) -> (usize, usize) {
-    let (map, mut counts1, first, last) = parse(s);
-    let mut counts2 = HashMap::new();
+    let (map, mut counts1, last) = parse(s);
+    let mut counts2 = Array2::zeros((26, 26));
     let mut part1 = 0;
-    // Do polymer expansion
     for iteration in 0..40 {
-        counts2.clear();
-        for (&(a, b), &n) in counts1.iter() {
-            match map.get(&(a, b)) {
-                Some(&y) => {
-                    update(&mut counts2, (a, y), n);
-                    update(&mut counts2, (y, b), n);
-                }
-                None => {
-                    counts2.insert((a, b), n);
-                }
+        counts2.fill(0);
+        for ((a, b), count) in counts1.indexed_iter() {
+            let y = map[[a, b]] as usize;
+            if y == 255 {
+                // sentinel value for no map
+                continue;
             }
+            counts2[[a, y]] += count;
+            counts2[[y, b]] += count;
         }
         std::mem::swap(&mut counts1, &mut counts2);
         if iteration == 9 {
-            part1 = true_counts(&counts1, first, last)
+            part1 = monomer_counts(&counts1, last)
         }
-        //println!("{:?}", counts1);
     }
-    (part1, true_counts(&counts1, first, last))
+    (part1, monomer_counts(&counts1, last))
 }
 
-fn true_counts(m: &HashMap<(char, char), usize>, first: char, last: char) -> usize {
-    let mut counts: HashMap<char, usize> = HashMap::new();
-    for (&(a, b), &j) in m.iter() {
-        update(&mut counts, a, j);
-        update(&mut counts, b, j);
-    }
-    update(&mut counts, first, 1);
-    update(&mut counts, last, 1);
-    let v = counts.iter().map(|(_, &n)| n / 2).collect::<Vec<_>>();
-    let min = v.iter().fold(usize::MAX, |a, b| a.min(*b));
+// The counts are counts of monomer pairs. To get counts for each monomer, just take the
+// first of each pair. Then manually add the last monomer, which is not the first in any pair.
+fn monomer_counts(counts: &Array2<usize>, last: u8) -> usize {
+    let mut v = counts.sum_axis(ndarray::Axis(1)).to_vec();
+    v[last as usize] += 1;
+    let min = v
+        .iter()
+        .fold(usize::MAX, |a, b| if *b == 0 { a } else { a.min(*b) });
     let max = v.iter().fold(usize::MIN, |a, b| a.max(*b));
     max - min
 }
 
-fn update<K>(m: &mut HashMap<K, usize>, k: K, n: usize)
-where
-    K: Eq + Hash + Copy,
-{
-    m.insert(k, m.get(&k).unwrap_or(&0) + n);
-}
-
-fn parse(
-    s: &str,
-) -> (
-    HashMap<(char, char), char>,
-    HashMap<(char, char), usize>,
-    char,
-    char,
-) {
-    let nchar = |s: &str, n: usize| s.chars().nth(n).unwrap();
-    let mut map = HashMap::new();
-    let mut counts = HashMap::new();
+fn parse(s: &str) -> (Array2<u8>, Array2<usize>, u8) {
+    let nbyte = |s: &str, n: usize| s.bytes().nth(n).unwrap() - b'A';
+    let mut map = Array2::from_elem((26, 26), 255u8);
+    let mut counts = Array2::zeros((26, 26));
 
     let mut lines = s.trim().lines();
     let pol = lines.next().unwrap().trim();
-    for (i, j) in pol.chars().zip(pol.chars().skip(1)) {
-        update(&mut counts, (i, j), 1);
+    for (i, j) in pol.bytes().zip(pol.bytes().skip(1)) {
+        counts[[(i - b'A') as usize, (j - b'A') as usize]] += 1;
     }
     lines.next().unwrap();
     for line in lines {
         let (from, to) = line.trim().split_once(" -> ").unwrap();
-        map.insert((nchar(from, 0), nchar(from, 1)), nchar(to, 0));
+        map[[nbyte(from, 0) as usize, nbyte(from, 1) as usize]] = nbyte(to, 0);
     }
-    (
-        map,
-        counts,
-        nchar(pol, 0),
-        pol.chars().rev().nth(0).unwrap(),
-    )
+    (map, counts, nbyte(pol, pol.len() - 1))
 }
 
 #[cfg(test)]

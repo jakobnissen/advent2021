@@ -10,6 +10,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.51"
 gumdrop = "0.8.0"
+ndarray = "0.15.4"
 reqwest = { version = "0.11", features = ["blocking"] }
 
 [profile.release]
