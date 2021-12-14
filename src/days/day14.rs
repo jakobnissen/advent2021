@@ -1,43 +1,82 @@
-fn parse(s: &str) -> (Vec<u8>, [[u8; 28]; 28]) {
-    let mut lut = [[0u8; 28]; 28];
+use std::collections::HashMap;
+use std::hash::Hash;
+
+pub fn solve(s: &str) -> (usize, usize) {
+    let (map, mut counts1, first, last) = parse(s);
+    let mut counts2 = HashMap::new();
+    let mut part1 = 0;
+    // Do polymer expansion
+    for iteration in 0..40 {
+        counts2.clear();
+        for (&(a, b), &n) in counts1.iter() {
+            match map.get(&(a, b)) {
+                Some(&y) => {
+                    update(&mut counts2, (a, y), n);
+                    update(&mut counts2, (y, b), n);
+                }
+                None => {
+                    counts2.insert((a, b), n);
+                }
+            }
+        }
+        std::mem::swap(&mut counts1, &mut counts2);
+        if iteration == 9 {
+            part1 = true_counts(&counts1, first, last)
+        }
+        //println!("{:?}", counts1);
+    }
+    (part1, true_counts(&counts1, first, last))
+}
+
+fn true_counts(m: &HashMap<(char, char), usize>, first: char, last: char) -> usize {
+    let mut counts: HashMap<char, usize> = HashMap::new();
+    for (&(a, b), &j) in m.iter() {
+        update(&mut counts, a, j);
+        update(&mut counts, b, j);
+    }
+    update(&mut counts, first, 1);
+    update(&mut counts, last, 1);
+    let v = counts.iter().map(|(_, &n)| n / 2).collect::<Vec<_>>();
+    let min = v.iter().fold(usize::MAX, |a, b| a.min(*b));
+    let max = v.iter().fold(usize::MIN, |a, b| a.max(*b));
+    max - min
+}
+
+fn update<K>(m: &mut HashMap<K, usize>, k: K, n: usize)
+where
+    K: Eq + Hash + Copy,
+{
+    m.insert(k, m.get(&k).unwrap_or(&0) + n);
+}
+
+fn parse(
+    s: &str,
+) -> (
+    HashMap<(char, char), char>,
+    HashMap<(char, char), usize>,
+    char,
+    char,
+) {
+    let nchar = |s: &str, n: usize| s.chars().nth(n).unwrap();
+    let mut map = HashMap::new();
+    let mut counts = HashMap::new();
+
     let mut lines = s.trim().lines();
-    let v = lines.next().unwrap().trim().as_bytes().iter().map(|b| b - b'A').collect::<Vec<_>>();
+    let pol = lines.next().unwrap().trim();
+    for (i, j) in pol.chars().zip(pol.chars().skip(1)) {
+        update(&mut counts, (i, j), 1);
+    }
     lines.next().unwrap();
     for line in lines {
         let (from, to) = line.trim().split_once(" -> ").unwrap();
-        let i1 = from.bytes().nth(0).unwrap() - b'A';
-        let i2 = from.bytes().nth(1).unwrap() - b'A';
-        let y =  to.bytes().nth(0).unwrap() - b'A';
-        lut[i1 as usize][i2 as usize] = y
+        map.insert((nchar(from, 0), nchar(from, 1)), nchar(to, 0));
     }
-    (v, lut)
-}
-
-pub fn part1(s: &str) -> usize {
-    let (mut v1, lut) = parse(s);
-    let mut v2: Vec<u8> = Vec::new();
-    for _ in 0..10 {
-        v2.truncate(0);
-        for (i, j) in v1.iter().zip(v1[1..].iter()) {
-            let y = lut[*i as usize][*j as usize];
-            v2.push(*i);
-            if y != 0 {
-                v2.push(y)
-            }
-        }
-        v2.push(*v1.last().unwrap());
-        //println!("{:?}", v2);
-        std::mem::swap(&mut v1, &mut v2);
-    }
-    let mut counts: Vec<usize> = vec![0; 28];
-    for i in v1.iter() {
-        counts[*i as usize] += 1;
-    }
-    let max = counts.iter().fold(0usize, |a, b| a.max(*b));
-    let min = counts.iter().fold(usize::MAX, |a, b| {
-        if *b == 0 {a} else {a.min(*b)}
-    });
-    max - min
+    (
+        map,
+        counts,
+        nchar(pol, 0),
+        pol.chars().rev().nth(0).unwrap(),
+    )
 }
 
 #[cfg(test)]
@@ -63,6 +102,6 @@ mod tests {
 
     #[test]
     fn test() {
-        assert_eq!(super::part1(TEST_STR), 1588);
+        assert_eq!(super::solve(TEST_STR), (1588, 2188189693529));
     }
 }
