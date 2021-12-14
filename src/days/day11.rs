@@ -1,8 +1,9 @@
 struct SquidGrid([[u8; 10]; 10]);
 
-fn cartesian<T, E>(a: T, b: T) -> impl Iterator<Item=(E, E)>
-where T: Iterator<Item=E> + Clone,
-E: Copy
+fn cartesian<T, E>(a: T, b: T) -> impl Iterator<Item = (E, E)>
+where
+    T: Iterator<Item = E> + Clone,
+    E: Copy,
 {
     a.flat_map(move |x| b.clone().map(move |y| (x, y)))
 }
@@ -99,6 +100,6 @@ mod tests {
 
     #[test]
     fn test() {
-        assert_eq!(super::solve(TEST_STR), (1656, 1656));
+        assert_eq!(super::solve(TEST_STR), (1656, 195));
     }
 }
