@@ -99,6 +99,6 @@ mod tests {
 
     #[test]
     fn test() {
-        assert_eq!(super::solve(TEST_STR), (1656, 1656));
+        assert_eq!(super::solve(TEST_STR), (1656, 195));
     }
 }
